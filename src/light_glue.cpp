@@ -18,32 +18,43 @@ SuperPointLightGlue::SuperPointLightGlue(const PointMatcherConfig &lightglue_con
 }
 
 bool SuperPointLightGlue::build() {
+	std::cout << "[LG] build start" << std::endl;
   if (deserialize_engine()) {
+    std::cout << "[LG] engine loaded from cache" << std::endl;
     return true;
-  }
+}
 
+std::cout << "[LG] no cached engine" << std::endl;
+
+std::cout << "[LG] creating builder" << std::endl;
   auto builder = TensorRTUniquePtr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(gLogger.getTRTLogger()));
+  std::cout << "[LG] builder OK" << std::endl;
   if (!builder) {
     return false;
   }
 
   const auto explicit_batch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+  std::cout << "[LG] creating network" << std::endl;
   auto network = TensorRTUniquePtr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicit_batch));
+  std::cout << "[LG] network OK" << std::endl;
   if (!network) {
     return false;
   }
-
+std::cout << "[LG] creating config" << std::endl;
   auto config = TensorRTUniquePtr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
+  std::cout << "[LG] config OK" << std::endl;
   if (!config) {
     return false;
   }
-
+std::cout << "[LG] creating parser" << std::endl;
   auto parser = TensorRTUniquePtr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, gLogger.getTRTLogger()));
+  std::cout << "[LG] parser OK" << std::endl;
   if (!parser) {
     return false;
   }
-
+std::cout << "[LG] creating profile" << std::endl;
   auto profile = builder->createOptimizationProfile();
+  std::cout << "[LG] profile OK" << std::endl;
   if (!profile) {
     return false;
   }
@@ -65,7 +76,9 @@ bool SuperPointLightGlue::build() {
 
   config->addOptimizationProfile(profile);
 
+std::cout << "[LG] before construct_network" << std::endl;
   auto constructed = construct_network(builder, network, config, parser);
+  std::cout << "[LG] after construct_network" << std::endl;
   if (!constructed) {
     return false;
   }
@@ -282,7 +295,7 @@ bool SuperPointLightGlue::process_output(const BufferManager &buffers, Eigen::Ma
 
 void SuperPointLightGlue::save_engine() {
   if (lightglue_config_.engine_file.empty()) return;
-  if (engine_ != nullptr) {
+ if (engine_ != nullptr) {
     nvinfer1::IHostMemory *data = engine_->serialize();
     std::ofstream file(lightglue_config_.engine_file, std::ios::binary);
     ;
@@ -292,26 +305,46 @@ void SuperPointLightGlue::save_engine() {
 }
 
 bool SuperPointLightGlue::deserialize_engine() {
-  std::ifstream file(lightglue_config_.engine_file, std::ios::binary);
-  if (file.is_open()) {
-    file.seekg(0, std::ifstream::end);
-    size_t size = file.tellg();
-    file.seekg(0, std::ifstream::beg);
-    char *model_stream = new char[size];
-    file.read(model_stream, size);
-    file.close();
-    nvinfer1::IRuntime *runtime = nvinfer1::createInferRuntime(gLogger);
-    if (runtime == nullptr) {
-      delete[] model_stream;
-      return false;
+    std::cout << "[LG] deserialize begin" << std::endl;
+
+    std::ifstream file(lightglue_config_.engine_file, std::ios::binary);
+
+    std::cout << "[LG] file open = " << file.is_open() << std::endl;
+
+    if (file.is_open()) {
+
+        file.seekg(0, std::ifstream::end);
+        size_t size = file.tellg();
+        file.seekg(0, std::ifstream::beg);
+
+        std::cout << "[LG] engine size = " << size << std::endl;
+
+        char *model_stream = new char[size];
+
+        file.read(model_stream, size);
+        file.close();
+
+        std::cout << "[LG] before createInferRuntime" << std::endl;
+
+        nvinfer1::IRuntime *runtime =
+    nvinfer1::createInferRuntime(gLogger.getTRTLogger());
+
+        std::cout << "[LG] after createInferRuntime" << std::endl;
+
+        if (!runtime)
+            return false;
+
+        std::cout << "[LG] before deserializeCudaEngine" << std::endl;
+
+        engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(
+            runtime->deserializeCudaEngine(model_stream, size));
+
+        std::cout << "[LG] after deserializeCudaEngine" << std::endl;
+
+        delete[] model_stream;
+
+        return engine_ != nullptr;
     }
-    engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(runtime->deserializeCudaEngine(model_stream, size));
-    if (engine_ == nullptr) {
-      delete[] model_stream;
-      return false;
-    }
-    delete[] model_stream;
-    return true;
-  }
-  return false;
+
+    return false;
 }

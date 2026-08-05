@@ -32,6 +32,8 @@ find_package(Boost REQUIRED)
 find_package(G2O REQUIRED)
 find_package(Gflags REQUIRED)
 find_package(Glog REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(REALSENSE2 REQUIRED realsense2)
 
 catkin_package(
  INCLUDE_DIRS include
@@ -51,6 +53,7 @@ include_directories(
   ${G2O_INCLUDE_DIR}
   ${GFLAGS_INCLUDE_DIRS} 
   ${GLOG_INCLUDE_DIRS}
+  ${REALSENSE2_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}_lib SHARED
@@ -73,6 +76,7 @@ add_library(${PROJECT_NAME}_lib SHARED
   src/camera.cc
   src/imu.cc
   src/dataset.cc
+  src/realsense_dataset.cc
   src/frame.cc
   src/point_matcher.cc
   src/mappoint.cc
@@ -85,12 +89,14 @@ add_library(${PROJECT_NAME}_lib SHARED
   src/map_user.cc
   src/timer.cc
   src/debug.cc
+
 )
 
 target_link_libraries(${PROJECT_NAME}_lib
   nvinfer
   nvonnxparser
   ${OpenCV_LIBRARIES}
+  ${REALSENSE2_LIBRARIES}
   ${CUDA_LIBRARIES}
   ${Boost_LIBRARIES}
   ${G2O_LIBRARIES}
@@ -113,3 +119,6 @@ target_link_libraries(relocalization ${PROJECT_NAME}_lib ${catkin_LIBRARIES})
 
 add_executable(test_feature demo/test_feature.cpp)
 target_link_libraries(test_feature ${PROJECT_NAME}_lib ${catkin_LIBRARIES})
+
+add_executable(visual_odometry_realsense demo/visual_odometry_realsense.cpp)
+target_link_libraries(visual_odometry_realsense ${PROJECT_NAME}_lib ${catkin_LIBRARIES})

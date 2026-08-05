@@ -21,17 +21,52 @@
 #include "timer.h"
 #include "debug.h"
 
-MapBuilder::MapBuilder(VisualOdometryConfigs& configs, ros::NodeHandle nh): _shutdown(false), _feature_thread_stop(false), 
-    _tracking_trhead_stop(false), _init(false), _insert_next_keyframe(false), _track_id(0), _line_track_id(0), _configs(configs){
-  _camera = std::shared_ptr<Camera>(new Camera(configs.camera_config_path));
-  _preinteration_keyframe.SetNoiseAndWalk(_camera->GyrNoise(), _camera->AccNoise(), _camera->GyrWalk(), _camera->AccWalk());
-  _point_matcher = std::shared_ptr<PointMatcher>(new PointMatcher(configs.point_matcher_config));
-  _feature_detector = std::shared_ptr<FeatureDetector>(new FeatureDetector(configs.plnet_config));
-  _ros_publisher = std::shared_ptr<RosPublisher>(new RosPublisher(configs.ros_publisher_config, nh));
-  _map = std::shared_ptr<Map>(new Map(_configs.backend_optimization_config, _camera, _ros_publisher));
+MapBuilder::MapBuilder(VisualOdometryConfigs& configs, ros::NodeHandle nh)
+    : _shutdown(false),
+      _feature_thread_stop(false),
+      _tracking_trhead_stop(false),
+      _init(false),
+      _insert_next_keyframe(false),
+      _track_id(0),
+      _line_track_id(0),
+      _configs(configs) {
 
-  _feature_thread = std::thread(boost::bind(&MapBuilder::ExtractFeatureThread, this));
-  _tracking_thread = std::thread(boost::bind(&MapBuilder::TrackingThread, this));
+  std::cout << "[1] Camera..." << std::endl;
+  _camera = std::make_shared<Camera>(configs.camera_config_path);
+
+  std::cout << "[2] IMU noise..." << std::endl;
+  _preinteration_keyframe.SetNoiseAndWalk(
+      _camera->GyrNoise(),
+      _camera->AccNoise(),
+      _camera->GyrWalk(),
+      _camera->AccWalk());
+
+  std::cout << "[3] PointMatcher..." << std::endl;
+  _point_matcher = std::make_shared<PointMatcher>(
+      configs.point_matcher_config);
+
+  std::cout << "[4] FeatureDetector..." << std::endl;
+  _feature_detector = std::make_shared<FeatureDetector>(
+      configs.plnet_config);
+
+  std::cout << "[5] RosPublisher..." << std::endl;
+  _ros_publisher = std::make_shared<RosPublisher>(
+      configs.ros_publisher_config, nh);
+
+  std::cout << "[6] Map..." << std::endl;
+  _map = std::make_shared<Map>(
+      _configs.backend_optimization_config,
+      _camera,
+      _ros_publisher);
+
+  std::cout << "[7] Threads..." << std::endl;
+  _feature_thread = std::thread(
+      boost::bind(&MapBuilder::ExtractFeatureThread, this));
+
+  _tracking_thread = std::thread(
+      boost::bind(&MapBuilder::TrackingThread, this));
+
+  std::cout << "[8] Constructor finished" << std::endl;
 }
 
 bool MapBuilder::UseIMU(){

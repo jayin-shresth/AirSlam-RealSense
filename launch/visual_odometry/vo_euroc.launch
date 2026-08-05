@@ -1,9 +1,9 @@
 <launch>
   <arg name="config_path" default = "$(find air_slam)/configs/visual_odometry/vo_euroc.yaml" />
-  <arg name="dataroot" default = "/media/data/datasets/euroc/seq/V1_02_medium" />
+  <arg name="dataroot" default = "/workspace/datasets/EuRoC/machine_hall/MH_01_easy/mav0" />
   <arg name="camera_config_path" default = "$(find air_slam)/configs/camera/euroc.yaml" />
   <arg name="model_dir" default = "$(find air_slam)/output" />
-  <arg name="saving_dir" default = "$(find air_slam)/debug" />
+  <arg name="saving_dir" default = "/workspace/results" />
 
   <node name="visual_odometry" pkg="air_slam" type="visual_odometry" output="screen">
     <param name="config_path" type="string" value="$(arg config_path)" />
@@ -13,7 +13,7 @@
     <param name="saving_dir" type="string" value="$(arg saving_dir)" />
   </node>
 
-  <arg name="visualization" default="true" />
+  <arg name="visualization" default="false" />
   <group if="$(arg visualization)">
     <node name="rviz" pkg="rviz" type="rviz" args="-d $(find air_slam)/rviz/vo.rviz" output="screen" />
   </group>    

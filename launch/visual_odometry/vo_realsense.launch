@@ -1,0 +1,46 @@
+<launch>
+
+  <arg name="config_path"
+       default="$(find air_slam)/configs/visual_odometry/vo_euroc.yaml" />
+
+  <arg name="camera_config_path"
+       default="$(find air_slam)/configs/camera/realsense_848_480.yaml" />
+
+  <arg name="model_dir"
+       default="$(find air_slam)/output" />
+
+  <arg name="saving_dir"
+       default="/workspace/results" />
+
+  <node
+      name="visual_odometry_realsense"
+      pkg="air_slam"
+      type="visual_odometry_realsense"
+      output="screen">
+
+    <param name="config_path"
+           value="$(arg config_path)" />
+
+    <param name="camera_config_path"
+           value="$(arg camera_config_path)" />
+
+    <param name="model_dir"
+           value="$(arg model_dir)" />
+
+    <param name="saving_dir"
+           value="$(arg saving_dir)" />
+
+  </node>
+
+  <arg name="visualization" default="true"/>
+
+  <group if="$(arg visualization)">
+    <node
+        name="rviz"
+        pkg="rviz"
+        type="rviz"
+        args="-d $(find air_slam)/rviz/vo.rviz"
+        output="screen"/>
+  </group>
+
+</launch>
