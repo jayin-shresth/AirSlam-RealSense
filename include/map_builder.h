@@ -64,6 +64,7 @@ typedef std::shared_ptr<TrackingData> TrackingDataPtr;
 class MapBuilder{
 public:
   MapBuilder(VisualOdometryConfigs& configs, ros::NodeHandle nh);
+  Eigen::Matrix4d GetCurrentPose();
   bool UseIMU();
   void AddInput(InputDataPtr data);
   void ExtractFeatureThread();
@@ -109,6 +110,10 @@ private:
   FramePtr _last_keyframe_feature;
   FramePtr _last_keyframe_tracking;
   FramePtr _last_tracked_frame;
+
+  Eigen::Matrix4d _current_pose = Eigen::Matrix4d::Identity();
+  std::mutex _pose_mutex;
+
   cv::Mat _last_keyimage;
 
   cv::Mat key_image_pub;

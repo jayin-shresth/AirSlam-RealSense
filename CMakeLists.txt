@@ -85,6 +85,7 @@ add_library(${PROJECT_NAME}_lib SHARED
   src/ros_publisher.cc
   src/map.cc
   src/map_builder.cc
+  src/airslam_interface.cc
   src/map_refiner.cc
   src/map_user.cc
   src/timer.cc

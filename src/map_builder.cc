@@ -68,6 +68,10 @@ MapBuilder::MapBuilder(VisualOdometryConfigs& configs, ros::NodeHandle nh)
 
   std::cout << "[8] Constructor finished" << std::endl;
 }
+Eigen::Matrix4d MapBuilder::GetCurrentPose(){
+  std::lock_guard<std::mutex> lock(_pose_mutex);
+  return _current_pose;
+}
 
 bool MapBuilder::UseIMU(){
   return _camera->UseIMU();
@@ -227,6 +231,10 @@ void MapBuilder::TrackingThread(){
       InsertKeyframe(frame);
       _last_keyframe_tracking = frame;
       _last_tracked_frame = frame;
+      {
+ 	 std::lock_guard<std::mutex> lock(_pose_mutex);
+  	_current_pose = frame->GetPose();
+      }
       _last_keyimage = image_left_rect;
 
       PublishFrame(frame, image_left_rect, frame_type, matches);
@@ -245,6 +253,10 @@ void MapBuilder::TrackingThread(){
 
     if(track_inliers > _configs.keyframe_config.lost_num_match){ 
       _last_tracked_frame = frame;
+      {
+  	std::lock_guard<std::mutex> lock(_pose_mutex);
+  	_current_pose = frame->GetPose();
+      }
     }
 
     if(frame_type == FrameType::KeyFrame){
